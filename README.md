@@ -28,7 +28,7 @@ open http://localhost:3000, enter a team code and a name.
 4. share the url. teammates open it, type the same team code, done.
 
 room link: anyone can copy a link with the team code in it
-(`https://your-app.vercel.app/?room=KESSLER`) and joining prefills it.
+(`https://your-app.vercel.app/?room=TEAM-CODE`) and joining prefills it.
 
 ## without kv / blob (demo mode)
 

@@ -291,7 +291,7 @@ export default function Home() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") join();
               }}
-              placeholder="KESSLER"
+              placeholder="TEAM-CODE"
               autoCapitalize="characters"
               autoComplete="off"
             />
@@ -305,7 +305,7 @@ export default function Home() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") join();
               }}
-              placeholder="Shivamshu"
+              placeholder="Your name"
               autoComplete="off"
             />
           </div>
