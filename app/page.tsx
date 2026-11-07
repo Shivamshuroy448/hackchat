@@ -118,6 +118,17 @@ export default function Home() {
     }
   }, []);
 
+  // load cached messages and files whenever entering a room
+  useEffect(() => {
+    if (!room) return;
+    try {
+      const cachedM = window.localStorage.getItem(`hackchat:msgs:${room}`);
+      if (cachedM) setMessages(JSON.parse(cachedM));
+      const cachedF = window.localStorage.getItem(`hackchat:files:${room}`);
+      if (cachedF) setFiles(JSON.parse(cachedF));
+    } catch {}
+  }, [room]);
+
   const fetchRoom = useCallback(async () => {
     if (!room) return;
     try {
@@ -127,11 +138,47 @@ export default function Home() {
       ]);
       if (mRes.ok) {
         const data = await mRes.json();
-        if (Array.isArray(data.messages)) setMessages(data.messages);
+        if (Array.isArray(data.messages)) {
+          setMessages((prev) => {
+            if (data.messages.length === 0 && prev.length > 0) return prev;
+            const map = new Map(prev.map((m) => [m.id, m]));
+            for (const m of data.messages) {
+              map.set(m.id, m);
+            }
+            const merged = Array.from(map.values()).sort(
+              (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+            );
+            try {
+              window.localStorage.setItem(
+                `hackchat:msgs:${room}`,
+                JSON.stringify(merged),
+              );
+            } catch {}
+            return merged;
+          });
+        }
       }
       if (fRes.ok) {
         const data = await fRes.json();
-        if (Array.isArray(data.files)) setFiles(data.files);
+        if (Array.isArray(data.files)) {
+          setFiles((prev) => {
+            if (data.files.length === 0 && prev.length > 0) return prev;
+            const map = new Map(prev.map((f) => [f.id, f]));
+            for (const f of data.files) {
+              map.set(f.id, f);
+            }
+            const merged = Array.from(map.values()).sort(
+              (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+            );
+            try {
+              window.localStorage.setItem(
+                `hackchat:files:${room}`,
+                JSON.stringify(merged),
+              );
+            } catch {}
+            return merged;
+          });
+        }
       }
     } catch {
       // offline — keep showing the last fetched data
@@ -175,8 +222,15 @@ export default function Home() {
     window.localStorage.setItem("hackchat:name", displayName);
     setRoom(code);
     setName(displayName);
-    setMessages([]);
-    setFiles([]);
+    try {
+      const cachedM = window.localStorage.getItem(`hackchat:msgs:${code}`);
+      setMessages(cachedM ? JSON.parse(cachedM) : []);
+      const cachedF = window.localStorage.getItem(`hackchat:files:${code}`);
+      setFiles(cachedF ? JSON.parse(cachedF) : []);
+    } catch {
+      setMessages([]);
+      setFiles([]);
+    }
   }
 
   function leave() {
@@ -209,6 +263,23 @@ export default function Home() {
         setError(data.error || "could not send the message");
         return;
       }
+      const data = await res.json();
+      if (data.message) {
+        setMessages((prev) => {
+          const map = new Map(prev.map((m) => [m.id, m]));
+          map.set(data.message.id, data.message);
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+          );
+          try {
+            window.localStorage.setItem(
+              `hackchat:msgs:${room}`,
+              JSON.stringify(merged),
+            );
+          } catch {}
+          return merged;
+        });
+      }
       setComposer("");
       await fetchRoom();
     } catch {
@@ -238,6 +309,23 @@ export default function Home() {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "upload failed");
         return;
+      }
+      const data = await res.json();
+      if (data.file) {
+        setFiles((prev) => {
+          const map = new Map(prev.map((f) => [f.id, f]));
+          map.set(data.file.id, data.file);
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+          );
+          try {
+            window.localStorage.setItem(
+              `hackchat:files:${room}`,
+              JSON.stringify(merged),
+            );
+          } catch {}
+          return merged;
+        });
       }
       await fetchRoom();
     } catch {
